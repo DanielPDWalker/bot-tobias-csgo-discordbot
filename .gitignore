@@ -1,3 +1,4 @@
 local_settings.js
 node_modules/
 *.txt
+dates.js
