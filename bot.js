@@ -47,41 +47,48 @@ function scrapeConsoleOutput(s_post_list, s_scraped_post_count) {
 function redditScrape(target_channel, startup = 0) {
   let newestPostTime = 0;
   let scraped_post_count = 0;
-  r.getUser(TARGET_USER).getSubmissions({limit: 200}).then(posts => {
-    let post_list = [];
-    for (var i = 0; i < posts.length; i++) {
-      scraped_post_count += 1;
-      if (posts[i].title.startsWith(SEARCH_STRING)) {
-        if (posts[i].subreddit_name_prefixed == TARGET_SUBREDDIT) {
-          post_list.push(posts[i]);
-        }else {
-          //pass
+  try {
+    r.getUser(TARGET_USER).getSubmissions({limit: 200}).then(posts => {
+      let post_list = [];
+      for (var i = 0; i < posts.length; i++) {
+        scraped_post_count += 1;
+        if (posts[i].title.startsWith(SEARCH_STRING)) {
+          if (posts[i].subreddit_name_prefixed == TARGET_SUBREDDIT) {
+            post_list.push(posts[i]);
+          }else {
+            //pass
+          }
         }
       }
-    }
-    if (post_list.length === 0) {
-      target_channel.send("No CSGO patch notes found! Something went wrong?");
-      return;
-    }
-    for (var i = 0; i < post_list.length; i++) {
-      if (post_list[i].created > newestPostTime) {
-        CSGO_NEWEST_PATCHNOTES = post_list[i];
-        newestPostTime = post_list[i].created;
+      if (post_list.length === 0) {
+        target_channel.send("No CSGO patch notes found! Something went wrong?");
+        return;
       }
-    }
-    if (typeof CSGO_NEWEST_PATCHNOTES_CACHED === 'undefined') {
-      CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
-    }
-    if (startup === 1) {
-      scrapeConsoleOutput(post_list, scraped_post_count);
+      for (var i = 0; i < post_list.length; i++) {
+        if (post_list[i].created > newestPostTime) {
+          CSGO_NEWEST_PATCHNOTES = post_list[i];
+          newestPostTime = post_list[i].created;
+        }
+      }
+      if (typeof CSGO_NEWEST_PATCHNOTES_CACHED === 'undefined') {
+        CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
+      }
+      if (startup === 1) {
+        scrapeConsoleOutput(post_list, scraped_post_count);
+        LAST_REQUEST = new Date().getTime();
+      }else {
+        CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
+        target_channel.send(CSGO_NEWEST_PATCHNOTES.title + '\n' + CSGO_NEWEST_PATCHNOTES.url);
+        scrapeConsoleOutput(post_list, scraped_post_count);
+        LAST_REQUEST = new Date().getTime();
+      }
+    })
+  } catch (e) {
+      console.log(e);
+      target_channel.send("There was an error reaching reddit's servers. I will try again in an hour, or you can for an update with !csgopatchget after 1 minuite has passed.");
+      target_channel.send(CSGO_NEWEST_PATCHNOTES_CACHED.title + '\n' + CSGO_NEWEST_PATCHNOTES_CACHED.url);
       LAST_REQUEST = new Date().getTime();
-    }else {
-      CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
-      target_channel.send(CSGO_NEWEST_PATCHNOTES.title + '\n' + CSGO_NEWEST_PATCHNOTES.url);
-      scrapeConsoleOutput(post_list, scraped_post_count);
-      LAST_REQUEST = new Date().getTime();
-    }
-  })
+  }
 };
 
 
