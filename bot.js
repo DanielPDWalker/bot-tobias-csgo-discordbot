@@ -86,8 +86,14 @@ function redditScrape(target_channel, startup = 0) {
   } catch (e) {
       console.log(e);
       target_channel.send("There was an error reaching reddit's servers. I will try again in an hour, or you can for an update with !csgopatchget after 1 minuite has passed.");
-      target_channel.send(CSGO_NEWEST_PATCHNOTES_CACHED.title + '\n' + CSGO_NEWEST_PATCHNOTES_CACHED.url);
-      LAST_REQUEST = new Date().getTime();
+      try {
+        target_channel.send(CSGO_NEWEST_PATCHNOTES_CACHED.title + '\n' + CSGO_NEWEST_PATCHNOTES_CACHED.url);
+        LAST_REQUEST = new Date().getTime();
+      } catch (e) {
+        console.log(e);
+        target_channel.send("No reddit data is currently cached, I will try again in an hour, or you can use !csgopatchget after 1 minuite has passed.");
+        LAST_REQUEST = new Date().getTime();
+      }
   }
 };
 
