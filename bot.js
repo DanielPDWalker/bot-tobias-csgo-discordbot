@@ -36,10 +36,14 @@ var CHANNEL_TO_USE;
 
 function scrapeConsoleOutput(s_post_list, s_scraped_post_count) {
   let dt = new Date(CSGO_NEWEST_PATCHNOTES.created * 1000);
+  let n = new Date().getTime();
+  let now = new Date();
+  now.setUTCSeconds(now.getUTCSeconds() / n);
   console.log("-------------------------");
   console.log("total posts found matching string: " + s_post_list.length);
   console.log("total posts scraped from reddit: " + s_scraped_post_count);
   console.log("Date & APPROX TIME Posted for newest patchnotes: " + dt.toString());
+  console.log("Most recent scrape time " + now.toString());
   console.log("-------------------------");
 };
 
