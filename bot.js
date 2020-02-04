@@ -80,12 +80,10 @@ function redditScrape(target_channel, startup = 0) {
           newestPostTime = post_list[i].created;
         }
       }
-      if (typeof CSGO_NEWEST_PATCHNOTES_CACHED === 'undefined') {
-        CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
-      }
       if (startup === 1) {
         scrapeConsoleOutput(post_list, scraped_post_count);
         LAST_REQUEST = new Date().getTime();
+        CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
       }else {
         if (CSGO_NEWEST_PATCHNOTES_CACHED != CSGO_NEWEST_PATCHNOTES) {
           target_channel.send(CSGO_NEWEST_PATCHNOTES.title + '\n' + CSGO_NEWEST_PATCHNOTES.url);
