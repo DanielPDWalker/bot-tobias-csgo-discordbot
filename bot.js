@@ -33,6 +33,8 @@ var CSGO_NEWEST_TIME = 0;
 
 var CHANNEL_TO_USE;
 
+var NEWEST_POST_TIME = 0;
+
 
 function getCurrentTime() {
   let n = new Date().getTime();
@@ -41,9 +43,13 @@ function getCurrentTime() {
   return now
 }
 
+function turnOffEmbeds() {
+
+}
+
 
 function scrapeConsoleOutput(s_post_list, s_scraped_post_count) {
-  let dt = new Date(CSGO_NEWEST_PATCHNOTES.created * 1000);
+  let dt = new Date(CSGO_NEWEST_PATCHNOTES.created_utc * 1000);
   let now = getCurrentTime();
   console.log("-------------------------");
   console.log("total posts found matching string: " + s_post_list.length);
@@ -54,8 +60,7 @@ function scrapeConsoleOutput(s_post_list, s_scraped_post_count) {
 };
 
 
-function redditScrape(target_channel, startup = 0) {
-  let newestPostTime = 0;
+function redditScrape(target_channel, startup, auto) {
   let scraped_post_count = 0;
   try {
     r.getUser(TARGET_USER).getSubmissions({limit: 200}).then(posts => {
@@ -75,9 +80,9 @@ function redditScrape(target_channel, startup = 0) {
         return;
       }
       for (var i = 0; i < post_list.length; i++) {
-        if (post_list[i].created > newestPostTime) {
+        if (post_list[i].created_utc > NEWEST_POST_TIME) {
           CSGO_NEWEST_PATCHNOTES = post_list[i];
-          newestPostTime = post_list[i].created;
+          NEWEST_POST_TIME = post_list[i].created_utc;
         }
       }
       if (startup === 1) {
@@ -85,9 +90,14 @@ function redditScrape(target_channel, startup = 0) {
         LAST_REQUEST = new Date().getTime();
         CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
       }else {
-        if (CSGO_NEWEST_PATCHNOTES_CACHED != CSGO_NEWEST_PATCHNOTES) {
-          target_channel.send(CSGO_NEWEST_PATCHNOTES.title + '\n' + CSGO_NEWEST_PATCHNOTES.url);
+        if (CSGO_NEWEST_PATCHNOTES_CACHED.created_utc != CSGO_NEWEST_PATCHNOTES.created_utc) {
+          target_channel.send('<' + CSGO_NEWEST_PATCHNOTES.url + '>' + '\n\n' + CSGO_NEWEST_PATCHNOTES.title + '\n\n' +  CSGO_NEWEST_PATCHNOTES.selftext);
           CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
+        }else {
+          if (auto != 1) {
+            let dt = new Date(CSGO_NEWEST_PATCHNOTES.created_utc * 1000);
+            target_channel.send('No new patch as of ' + dt);
+          }
         }
         scrapeConsoleOutput(post_list, scraped_post_count);
         LAST_REQUEST = new Date().getTime();
@@ -97,7 +107,7 @@ function redditScrape(target_channel, startup = 0) {
       console.log(e);
       target_channel.send("There was an error reaching reddit's servers. I will try again in an hour, or you can for an update with !csgopatchget after 1 minuite has passed.");
       try {
-        target_channel.send(CSGO_NEWEST_PATCHNOTES_CACHED.title + '\n' + CSGO_NEWEST_PATCHNOTES_CACHED.url);
+        target_channel.send('<' + CSGO_NEWEST_PATCHNOTES_CACHED.url + '>' + '\n\n' + CSGO_NEWEST_PATCHNOTES_CACHED.title + '\n\n' + CSGO_NEWEST_PATCHNOTES_CACHED.selftext);
         LAST_REQUEST = new Date().getTime();
       } catch (e) {
         console.log(e);
@@ -118,14 +128,17 @@ function cleanUpOldCooldownMessages() {
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
   CHANNEL_TO_USE = client.channels.find(ch => ch.name === ls.CHANNEL_TO_USE);
-  redditScrape(CHANNEL_TO_USE, 1);
+  CHANNEL_TO_USE.send('Running first Reddit API Scrape ~ 2 seconds please.');
+  redditScrape(CHANNEL_TO_USE, 1, 1);
+  CHANNEL_TO_USE.send('Ready and waiting.');
 });
 
 
 client.on('message', msg => {
   if (msg.content === '!csgopatch'){
-      CHANNEL_TO_USE.send(CSGO_NEWEST_PATCHNOTES.title + '\n' + CSGO_NEWEST_PATCHNOTES.url);
-
+    let dt = new Date(CSGO_NEWEST_PATCHNOTES.created_utc * 1000);
+    let e = {embed : {title: dt.toString()}};
+    CHANNEL_TO_USE.send('<' + CSGO_NEWEST_PATCHNOTES_CACHED.url + '>' + '\n\n' + CSGO_NEWEST_PATCHNOTES_CACHED.title + '\n\n' + CSGO_NEWEST_PATCHNOTES_CACHED.selftext, e);
   }
   if (msg.content === '!csgopatchget'){
     var now = new Date().getTime();
@@ -136,7 +149,7 @@ client.on('message', msg => {
         COOLDOWN_MESSAGE = sent_msg;
       });
     } else {
-      redditScrape(CHANNEL_TO_USE);
+      redditScrape(CHANNEL_TO_USE, 0, 0);
     }
   }
   if (msg.content === '!csgohelp'){
@@ -147,7 +160,7 @@ client.on('message', msg => {
 
 client.login(ls.TOKEN);
 client.guild;
-setInterval(function() { redditScrape(CHANNEL_TO_USE); }, 60*60*1000);
+setInterval(function() { redditScrape(CHANNEL_TO_USE, 0, 1); }, 60*60*1000);
 
 
 
@@ -158,7 +171,7 @@ subreddit_name_prefixed
 
 selftext (this is the body of the post)
 
-created - looks like getTime()?? example 15803444466 - so ms since 1st jan 1970?
+created_utc - looks like getTime()?? example 15803444466 - so ms since 1st jan 1970?
 
 url
 
