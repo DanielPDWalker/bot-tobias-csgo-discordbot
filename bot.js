@@ -34,11 +34,17 @@ var CSGO_NEWEST_TIME = 0;
 var CHANNEL_TO_USE;
 
 
-function scrapeConsoleOutput(s_post_list, s_scraped_post_count) {
-  let dt = new Date(CSGO_NEWEST_PATCHNOTES.created * 1000);
+function getCurrentTime() {
   let n = new Date().getTime();
   let now = new Date();
   now.setUTCSeconds(now.getUTCSeconds() / n);
+  return now
+}
+
+
+function scrapeConsoleOutput(s_post_list, s_scraped_post_count) {
+  let dt = new Date(CSGO_NEWEST_PATCHNOTES.created * 1000);
+  let now = getCurrentTime();
   console.log("-------------------------");
   console.log("total posts found matching string: " + s_post_list.length);
   console.log("total posts scraped from reddit: " + s_scraped_post_count);
@@ -81,8 +87,10 @@ function redditScrape(target_channel, startup = 0) {
         scrapeConsoleOutput(post_list, scraped_post_count);
         LAST_REQUEST = new Date().getTime();
       }else {
-        CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
-        target_channel.send(CSGO_NEWEST_PATCHNOTES.title + '\n' + CSGO_NEWEST_PATCHNOTES.url);
+        if (CSGO_NEWEST_PATCHNOTES_CACHED != CSGO_NEWEST_PATCHNOTES) {
+          target_channel.send(CSGO_NEWEST_PATCHNOTES.title + '\n' + CSGO_NEWEST_PATCHNOTES.url);
+          CSGO_NEWEST_PATCHNOTES_CACHED = CSGO_NEWEST_PATCHNOTES;
+        }
         scrapeConsoleOutput(post_list, scraped_post_count);
         LAST_REQUEST = new Date().getTime();
       }
